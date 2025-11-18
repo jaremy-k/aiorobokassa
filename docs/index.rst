@@ -1,5 +1,10 @@
 .. aiorobokassa documentation master file
 
+.. image:: _static/logo.png
+   :alt: aiorobokassa logo
+   :align: center
+   :width: 400px
+
 Welcome to aiorobokassa's documentation!
 ========================================
 

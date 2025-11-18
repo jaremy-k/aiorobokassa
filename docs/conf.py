@@ -57,6 +57,7 @@ intersphinx_mapping = {
 # HTML theme
 html_theme = "furo"
 html_title = "aiorobokassa Documentation"
+html_logo = "_static/logo.png"
 html_theme_options = {
     "navigation_with_keys": True,
     "announcement": None,
