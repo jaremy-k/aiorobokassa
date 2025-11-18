@@ -65,6 +65,24 @@ class TestPaymentRequest:
         )
         assert request.user_parameters == {"user_id": "123", "order_id": "456"}
 
+    def test_payment_request_with_float(self):
+        """Test payment request with float amount."""
+        request = PaymentRequest(out_sum=100.50, description="Test")
+        assert request.out_sum == Decimal("100.5")
+        assert isinstance(request.out_sum, Decimal)
+
+    def test_payment_request_with_int(self):
+        """Test payment request with int amount."""
+        request = PaymentRequest(out_sum=100, description="Test")
+        assert request.out_sum == Decimal("100")
+        assert isinstance(request.out_sum, Decimal)
+
+    def test_payment_request_with_string(self):
+        """Test payment request with string amount."""
+        request = PaymentRequest(out_sum="100.50", description="Test")
+        assert request.out_sum == Decimal("100.50")
+        assert isinstance(request.out_sum, Decimal)
+
 
 class TestResultURLNotification:
     """Tests for ResultURLNotification model."""

@@ -12,7 +12,9 @@ from aiorobokassa.models.receipt import Receipt
 class PaymentRequest(BaseModel):
     """Model for payment link generation."""
 
-    out_sum: Decimal = Field(..., description="Payment amount")
+    out_sum: Union[Decimal, float, int, str] = Field(
+        ..., description="Payment amount (Decimal, float, int, or string)"
+    )
     description: str = Field(..., description="Payment description")
     inv_id: Optional[int] = Field(None, description="Invoice ID (optional)")
     email: Optional[str] = Field(None, description="Customer email")
@@ -27,13 +29,27 @@ class PaymentRequest(BaseModel):
         None, description="Receipt data for fiscalization (Receipt model, JSON string or dict)"
     )
 
-    @field_validator("out_sum")
+    @field_validator("out_sum", mode="before")
     @classmethod
-    def validate_amount(cls, v: Decimal) -> Decimal:
-        """Validate payment amount is positive."""
-        if v <= 0:
+    def validate_amount(cls, v: Union[Decimal, float, int, str]) -> Decimal:
+        """Validate and convert payment amount to Decimal."""
+        # Convert to Decimal
+        if isinstance(v, Decimal):
+            amount = v
+        elif isinstance(v, (int, float)):
+            amount = Decimal(str(v))
+        elif isinstance(v, str):
+            try:
+                amount = Decimal(v)
+            except (ValueError, TypeError) as e:
+                raise ValueError(f"Invalid amount format: {v}") from e
+        else:
+            raise ValueError(f"Amount must be Decimal, float, int, or string, got {type(v)}")
+
+        # Validate amount is positive
+        if amount <= 0:
             raise ValueError("Payment amount must be positive")
-        return v
+        return amount
 
     @field_validator("description")
     @classmethod
@@ -95,20 +111,36 @@ class InvoiceRequest(BaseModel):
     """Model for invoice creation via XML API."""
 
     merchant_login: str = Field(..., description="Merchant login")
-    out_sum: Decimal = Field(..., description="Payment amount")
+    out_sum: Union[Decimal, float, int, str] = Field(
+        ..., description="Payment amount (Decimal, float, int, or string)"
+    )
     description: str = Field(..., description="Payment description")
     inv_id: Optional[int] = Field(None, description="Invoice ID")
     email: Optional[str] = Field(None, description="Customer email")
     expiration_date: Optional[str] = Field(None, description="Payment expiration date")
     user_parameters: Optional[Dict[str, str]] = Field(None, description="Additional parameters")
 
-    @field_validator("out_sum")
+    @field_validator("out_sum", mode="before")
     @classmethod
-    def validate_amount(cls, v: Decimal) -> Decimal:
-        """Validate payment amount is positive."""
-        if v <= 0:
+    def validate_amount(cls, v: Union[Decimal, float, int, str]) -> Decimal:
+        """Validate and convert payment amount to Decimal."""
+        # Convert to Decimal
+        if isinstance(v, Decimal):
+            amount = v
+        elif isinstance(v, (int, float)):
+            amount = Decimal(str(v))
+        elif isinstance(v, str):
+            try:
+                amount = Decimal(v)
+            except (ValueError, TypeError) as e:
+                raise ValueError(f"Invalid amount format: {v}") from e
+        else:
+            raise ValueError(f"Amount must be Decimal, float, int, or string, got {type(v)}")
+
+        # Validate amount is positive
+        if amount <= 0:
             raise ValueError("Payment amount must be positive")
-        return v
+        return amount
 
 
 class RefundRequest(BaseModel):

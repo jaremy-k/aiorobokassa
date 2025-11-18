@@ -88,6 +88,8 @@ def calculate_payment_signature(
     Calculate signature for payment URL.
 
     Signature format: MD5(merchant_login:out_sum:inv_id:receipt:password1)
+    Order is FIXED: MerchantLogin:OutSum:InvId:Receipt:password1
+    If InvId is not provided, it must be empty but present (two colons: ::)
     If receipt is provided, it must be included in signature calculation.
 
     Args:
@@ -101,16 +103,35 @@ def calculate_payment_signature(
     Returns:
         Signature string
     """
-    values = {
-        "MerchantLogin": merchant_login,
-        "OutSum": out_sum,
-    }
-    if inv_id:
-        values["InvId"] = inv_id
-    if receipt:
-        values["Receipt"] = receipt
+    # Convert string to enum if needed
+    if isinstance(algorithm, str):
+        try:
+            algorithm = SignatureAlgorithm.from_string(algorithm)
+        except ValueError as e:
+            raise InvalidSignatureAlgorithmError(str(e)) from e
 
-    return calculate_signature(values, password, algorithm)
+    # Build signature string in FIXED order according to RoboKassa documentation
+    # Format: MerchantLogin:OutSum:InvId:Receipt:password1
+    signature_parts = [merchant_login, out_sum]
+
+    # InvId must be present even if empty (two colons ::)
+    signature_parts.append(inv_id if inv_id else "")
+
+    # Receipt must be included if present
+    if receipt:
+        signature_parts.append(receipt)
+
+    signature_parts.append(password)
+
+    signature_string = ":".join(signature_parts)
+
+    # Calculate hash based on algorithm
+    hash_func = ALGORITHMS.get(algorithm)
+    if hash_func is None:
+        raise InvalidSignatureAlgorithmError(f"Unsupported algorithm: {algorithm}")
+
+    hash_obj = hash_func(signature_string.encode("utf-8"))
+    return hash_obj.hexdigest().upper()
 
 
 def verify_result_url_signature(

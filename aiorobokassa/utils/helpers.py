@@ -1,12 +1,14 @@
 """Utility functions for aiorobokassa."""
 
 from typing import Dict, Optional
-from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
+from urllib.parse import urlencode
 
 
 def build_url(base_url: str, params: Dict[str, Optional[str]]) -> str:
     """
     Build URL with query parameters.
+
+    Parameters are properly URL-encoded. SignatureValue should be last.
 
     Args:
         base_url: Base URL
@@ -15,33 +17,18 @@ def build_url(base_url: str, params: Dict[str, Optional[str]]) -> str:
     Returns:
         URL with query string
     """
-    # Filter out None values
+    # Filter out None values and convert to strings
     filtered_params = {k: str(v) for k, v in params.items() if v is not None}
 
     if not filtered_params:
         return base_url
 
-    parsed = urlparse(base_url)
+    # Use urlencode which properly encodes all parameters
+    # Note: urlencode handles encoding automatically, but we need to ensure
+    # SignatureValue is last (Python 3.7+ dicts maintain insertion order)
+    query_string = urlencode(filtered_params, doseq=False)
 
-    # Parse existing query parameters
-    existing_params = parse_qs(parsed.query, keep_blank_values=True)
-
-    # Update with new parameters (convert to list format for urlencode)
-    for key, value in filtered_params.items():
-        existing_params[key] = [value]
-
-    # Rebuild URL
-    new_query_string = urlencode(existing_params, doseq=True)
-    return urlunparse(
-        (
-            parsed.scheme,
-            parsed.netloc,
-            parsed.path,
-            parsed.params,
-            new_query_string,
-            parsed.fragment,
-        )
-    )
+    return f"{base_url}?{query_string}"
 
 
 def parse_shp_params(params: Dict[str, str]) -> Dict[str, str]:

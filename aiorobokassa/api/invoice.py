@@ -21,7 +21,7 @@ class InvoiceMixin:
 
     async def create_invoice(
         self,
-        out_sum: Decimal,
+        out_sum: Union[Decimal, float, int, str],
         description: str,
         inv_id: Optional[int] = None,
         email: Optional[str] = None,

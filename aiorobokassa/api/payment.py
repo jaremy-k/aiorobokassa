@@ -41,15 +41,22 @@ class PaymentMixin:
             client = cast("ClientProtocol", self)
         else:
             client = self  # type: ignore[assignment]
+
+        # Build params dict - SignatureValue will be added last
         params: Dict[str, Optional[str]] = {
             "MerchantLogin": client.merchant_login,
             "OutSum": str(request.out_sum),
-            "Description": request.description,
         }
+
+        # InvId must be included even if None (will be empty string in signature)
+        if request.inv_id is not None:
+            params["InvId"] = str(request.inv_id)
+
+        # Description - must be properly URL-encoded
+        params["Description"] = request.description
 
         # Map request fields to URL parameters
         field_mapping = {
-            "inv_id": "InvId",
             "email": "Email",
             "culture": "Culture",
             "encoding": "Encoding",
@@ -67,11 +74,7 @@ class PaymentMixin:
         elif client.test_mode:
             params["IsTest"] = "1"
 
-        # User parameters
-        if request.user_parameters:
-            params.update({f"Shp_{k}": v for k, v in request.user_parameters.items()})
-
-        # Receipt for fiscalization
+        # Receipt for fiscalization (must be before signature calculation)
         receipt_str: Optional[str] = None
         if request.receipt:
             # Receipt is already JSON string after validation (validator converts it)
@@ -82,21 +85,29 @@ class PaymentMixin:
                 params["Receipt"] = quote(receipt_str, safe="")
 
         # Calculate signature (receipt must be included if present)
+        # Use original JSON string (not URL-encoded) for signature
+        # Note: inv_id can be 0, so we check is not None, not truthiness
         signature = calculate_payment_signature(
             merchant_login=client.merchant_login,
             out_sum=str(request.out_sum),
-            inv_id=str(request.inv_id) if request.inv_id else None,
+            inv_id=str(request.inv_id) if request.inv_id is not None else None,
             password=client.password1,
             algorithm=signature_algorithm,
             receipt=receipt_str,  # Use original JSON string for signature
         )
+
+        # User parameters (Shp_*) - must be added before SignatureValue
+        if request.user_parameters:
+            params.update({f"Shp_{k}": v for k, v in request.user_parameters.items()})
+
+        # SignatureValue must be LAST parameter
         params["SignatureValue"] = signature
 
         return params
 
     async def create_payment_url(
         self,
-        out_sum: Decimal,
+        out_sum: Union[Decimal, float, int, str],
         description: str,
         inv_id: Optional[int] = None,
         email: Optional[str] = None,
@@ -112,7 +123,7 @@ class PaymentMixin:
         Create payment URL for RoboKassa.
 
         Args:
-            out_sum: Payment amount
+            out_sum: Payment amount (Decimal, float, int, or string)
             description: Payment description
             inv_id: Invoice ID (optional)
             email: Customer email (optional)
