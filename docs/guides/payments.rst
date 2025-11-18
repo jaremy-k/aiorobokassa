@@ -158,3 +158,110 @@ Basic example with receipt:
        receipt=receipt_data,
    )
 
+Split Payment
+------------
+
+Split payment allows distributing a payment between multiple merchants. This is useful for marketplace scenarios where payment needs to be split between the platform and sellers.
+
+Basic Split Payment
+~~~~~~~~~~~~~~~~~~~
+
+Create a split payment URL:
+
+.. code-block:: python
+
+   split_merchants = [
+       {
+           "id": "merchant1",
+           "amount": 50.00,
+       },
+       {
+           "id": "merchant2",
+           "amount": 50.50,
+       },
+   ]
+
+   url = client.create_split_payment_url(
+       out_amount=Decimal("100.50"),
+       merchant_id="master_merchant",
+       split_merchants=split_merchants,
+   )
+
+Split Payment with Receipt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add fiscalization receipts for each merchant:
+
+.. code-block:: python
+
+   from aiorobokassa.models.receipt import Receipt, ReceiptItem
+   from aiorobokassa.enums import TaxRate, TaxSystem, PaymentMethod, PaymentObject
+
+   receipt = Receipt(
+       items=[
+           ReceiptItem(
+               name="Item 1",
+               quantity=1,
+               cost=50.0,
+               tax=TaxRate.VAT20,
+               payment_method=PaymentMethod.FULL_PAYMENT,
+               payment_object=PaymentObject.COMMODITY,
+           )
+       ],
+       sno=TaxSystem.OSN,
+   )
+
+   split_merchants = [
+       {
+           "id": "merchant1",
+           "amount": 50.00,
+           "invoice_id": 100,
+           "receipt": receipt,
+       },
+       {
+           "id": "merchant2",
+           "amount": 50.50,
+       },
+   ]
+
+   url = client.create_split_payment_url(
+       out_amount=Decimal("100.50"),
+       merchant_id="master_merchant",
+       split_merchants=split_merchants,
+   )
+
+Split Payment with All Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use all available parameters:
+
+.. code-block:: python
+
+   shop_params = [
+       {"name": "param1", "value": "value1"},
+       {"name": "param2", "value": "value2"},
+   ]
+
+   url = client.create_split_payment_url(
+       out_amount=Decimal("100.50"),
+       merchant_id="master_merchant",
+       split_merchants=split_merchants,
+       merchant_comment="Split payment for order #123",
+       shop_params=shop_params,
+       email="customer@example.com",
+       inc_curr="BankCard",
+       language="ru",
+       is_test=True,
+       expiration_date="2024-12-31T23:59:59",
+       signature_algorithm=SignatureAlgorithm.SHA256,
+   )
+
+Split Payment Notes
+~~~~~~~~~~~~~~~~~~~
+
+- **Master merchant** initiates the split operation and receives the payment
+- **Split merchants** receive their portion of the payment
+- **Amounts can be zero** for merchants that don't need payment
+- **Receipts are optional** but recommended for fiscalization compliance
+- **Signature algorithm** defaults to MD5 but SHA256/SHA512 are recommended for production
+

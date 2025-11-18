@@ -97,6 +97,7 @@ SuccessURL is where users are redirected after successful payment. Verify signat
                out_sum=params["out_sum"],
                inv_id=params["inv_id"],
                signature_value=params["signature_value"],
+               shp_params=params.get("shp_params"),
            )
            # Show success page
            return "Payment successful!"
@@ -136,7 +137,9 @@ The library provides helper methods to parse notification parameters:
 Custom Parameters (Shp_*)
 -------------------------
 
-Custom parameters passed in payment URL are available in notifications:
+Custom parameters passed in payment URL are available in notifications. **Important:** These parameters are included in signature calculation, so you must pass them when verifying signatures.
+
+When creating payment URL:
 
 .. code-block:: python
 
@@ -147,8 +150,24 @@ Custom parameters passed in payment URL are available in notifications:
        user_parameters={"user_id": "123", "order_id": "456"},
    )
 
+In notification handler:
+
+.. code-block:: python
+
    # In notification handler
    params = client.parse_result_url_params(request_params)
+   
+   # Extract shp_params
    user_id = params["shp_params"]["user_id"]  # "123"
    order_id = params["shp_params"]["order_id"]  # "456"
+   
+   # IMPORTANT: Pass shp_params when verifying signature
+   client.verify_result_url(
+       out_sum=params["out_sum"],
+       inv_id=params["inv_id"],
+       signature_value=params["signature_value"],
+       shp_params=params.get("shp_params"),  # Required if shp_params were used
+   )
+
+**Note:** If you used ``user_parameters`` when creating the payment URL, you **must** pass ``shp_params`` to signature verification methods. Otherwise, signature verification will fail.
 

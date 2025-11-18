@@ -68,3 +68,21 @@ def sample_inv_id():
 def sample_email():
     """Fixture for sample email."""
     return "test@example.com"
+
+
+@pytest.fixture
+def password3():
+    """Fixture for password3."""
+    return "password33333333"
+
+
+@pytest.fixture
+def client_with_password3(merchant_login, password1, password2, password3):
+    """Fixture for RoboKassaClient with password3 (for refund v2 operations)."""
+    return RoboKassaClient(
+        merchant_login=merchant_login,
+        password1=password1,
+        password2=password2,
+        password3=password3,
+        test_mode=True,
+    )

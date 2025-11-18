@@ -10,8 +10,13 @@ class ClientProtocol(Protocol):
     merchant_login: str
     password1: str
     password2: str
+    password3: Optional[str]
     test_mode: bool
     base_url: str
+
+    async def _get(self, url: str, **kwargs: Any) -> Any:
+        """Make GET request."""
+        ...
 
     async def _post(self, url: str, **kwargs: Any) -> Any:
         """Make POST request."""

@@ -140,11 +140,13 @@ def verify_result_url_signature(
     password: str,
     received_signature: str,
     algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
+    shp_params: Optional[Dict[str, str]] = None,
 ) -> bool:
     """
     Verify signature from ResultURL notification.
 
-    Signature format: MD5(out_sum:inv_id:password2)
+    Signature format: MD5(out_sum:inv_id:Shp_param1:Shp_param2:...:password2)
+    Where Shp_ parameters are sorted alphabetically.
 
     Args:
         out_sum: Payment amount
@@ -152,6 +154,7 @@ def verify_result_url_signature(
         password: Password (password2)
         received_signature: Signature from notification
         algorithm: Hash algorithm
+        shp_params: Additional Shp_ parameters (without Shp_ prefix)
 
     Returns:
         True if signature is valid
@@ -160,6 +163,10 @@ def verify_result_url_signature(
         "OutSum": out_sum,
         "InvId": inv_id,
     }
+    # Add Shp_ parameters if provided (sorted alphabetically by calculate_signature)
+    if shp_params:
+        for key, value in shp_params.items():
+            values[f"Shp_{key}"] = value
     return verify_signature(values, password, received_signature, algorithm)
 
 
@@ -169,11 +176,13 @@ def verify_success_url_signature(
     password: str,
     received_signature: str,
     algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
+    shp_params: Optional[Dict[str, str]] = None,
 ) -> bool:
     """
     Verify signature from SuccessURL redirect.
 
-    Signature format: MD5(out_sum:inv_id:password1)
+    Signature format: MD5(out_sum:inv_id:Shp_param1:Shp_param2:...:password1)
+    Where Shp_ parameters are sorted alphabetically.
 
     Args:
         out_sum: Payment amount
@@ -181,6 +190,7 @@ def verify_success_url_signature(
         password: Password (password1)
         received_signature: Signature from redirect
         algorithm: Hash algorithm
+        shp_params: Additional Shp_ parameters (without Shp_ prefix)
 
     Returns:
         True if signature is valid
@@ -189,4 +199,49 @@ def verify_success_url_signature(
         "OutSum": out_sum,
         "InvId": inv_id,
     }
+    # Add Shp_ parameters if provided (sorted alphabetically by calculate_signature)
+    if shp_params:
+        for key, value in shp_params.items():
+            values[f"Shp_{key}"] = value
     return verify_signature(values, password, received_signature, algorithm)
+
+
+def calculate_split_signature(
+    invoice_json: str,
+    password: str,
+    algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
+) -> str:
+    """
+    Calculate signature for split payment.
+
+    Signature format: MD5(invoice_json + password1)
+    Where invoice_json is the JSON string in "pure" form (not URL-encoded).
+
+    Args:
+        invoice_json: Invoice JSON string (not URL-encoded)
+        password: Password (password1 of master merchant)
+        algorithm: Hash algorithm
+
+    Returns:
+        Hexadecimal signature string
+
+    Raises:
+        InvalidSignatureAlgorithmError: If algorithm is not supported
+    """
+    # Convert string to enum if needed
+    if isinstance(algorithm, str):
+        try:
+            algorithm = SignatureAlgorithm.from_string(algorithm)
+        except ValueError as e:
+            raise InvalidSignatureAlgorithmError(str(e)) from e
+
+    # Build signature string: invoice_json + password
+    signature_string = invoice_json + password
+
+    # Calculate hash based on algorithm
+    hash_func = ALGORITHMS.get(algorithm)
+    if hash_func is None:
+        raise InvalidSignatureAlgorithmError(f"Unsupported algorithm: {algorithm}")
+
+    hash_obj = hash_func(signature_string.encode("utf-8"))
+    return hash_obj.hexdigest().lower()

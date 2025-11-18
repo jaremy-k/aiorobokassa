@@ -11,7 +11,7 @@ from aiorobokassa.constants import DEFAULT_SIGNATURE_ALGORITHM, INVOICE_API_BASE
 from aiorobokassa.enums import InvoiceType, SignatureAlgorithm
 from aiorobokassa.exceptions import APIError
 from aiorobokassa.models.receipt import Receipt
-from aiorobokassa.models.requests import InvoiceItem
+from aiorobokassa.models.requests import InvoiceItem, InvoiceResponse
 from aiorobokassa.utils.jwt import create_jwt_token
 
 
@@ -34,7 +34,7 @@ class InvoiceMixin:
         fail_url: Optional[str] = None,
         fail_url_method: str = "GET",
         signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
-    ) -> Dict[str, Any]:
+    ) -> InvoiceResponse:
         """
         Create invoice via Invoice API (JWT-based).
 
@@ -56,7 +56,7 @@ class InvoiceMixin:
             signature_algorithm: Signature algorithm (optional, default: MD5)
 
         Returns:
-            Dictionary with invoice information (id, url, etc.)
+            InvoiceResponse with invoice information (id, url, inv_id, encoded_id)
 
         Raises:
             APIError: If invoice creation fails
@@ -158,12 +158,7 @@ class InvoiceMixin:
                 error_message = result.get("errorMessage", "Failed to create invoice")
                 raise APIError(f"Invoice creation failed: {error_message}")
 
-            return {
-                "id": result.get("id"),
-                "url": result.get("url"),
-                "inv_id": result.get("invId"),
-                "encoded_id": result.get("encodedId"),
-            }
+            return InvoiceResponse.from_api_response(result)
 
     async def deactivate_invoice(
         self,

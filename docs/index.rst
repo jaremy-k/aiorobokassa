@@ -1,9 +1,9 @@
 .. aiorobokassa documentation master file
 
-.. image:: _static/logo.png
-   :alt: aiorobokassa logo
+.. image:: _static/banner.png
+   :alt: aiorobokassa banner
    :align: center
-   :width: 400px
+   :width: 100%
 
 Welcome to aiorobokassa's documentation!
 ========================================

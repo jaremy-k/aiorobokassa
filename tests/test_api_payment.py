@@ -143,7 +143,7 @@ class TestPaymentMixin:
     @pytest.mark.asyncio
     async def test_create_payment_url_basic(self, client):
         """Test creating basic payment URL."""
-        url = await client.create_payment_url(
+        url = client.create_payment_url(
             out_sum=Decimal("100.50"),
             description="Test payment",
         )
@@ -156,7 +156,7 @@ class TestPaymentMixin:
     @pytest.mark.asyncio
     async def test_create_payment_url_with_all_params(self, client):
         """Test creating payment URL with all parameters."""
-        url = await client.create_payment_url(
+        url = client.create_payment_url(
             out_sum=Decimal("100.50"),
             description="Test payment",
             inv_id=12345,
@@ -173,12 +173,12 @@ class TestPaymentMixin:
     @pytest.mark.asyncio
     async def test_create_payment_url_different_algorithms(self, client):
         """Test creating payment URL with different algorithms."""
-        url_md5 = await client.create_payment_url(
+        url_md5 = client.create_payment_url(
             out_sum=Decimal("100.50"),
             description="Test",
             signature_algorithm=SignatureAlgorithm.MD5,
         )
-        url_sha256 = await client.create_payment_url(
+        url_sha256 = client.create_payment_url(
             out_sum=Decimal("100.50"),
             description="Test",
             signature_algorithm=SignatureAlgorithm.SHA256,
@@ -218,10 +218,11 @@ class TestPaymentMixin:
         """Test verifying ResultURL with Shp parameters."""
         out_sum = "100.50"
         inv_id = "12345"
-        # Calculate correct signature
+        shp_params = {"user_id": "123"}
+        # Calculate correct signature WITH shp_params
         from aiorobokassa.utils.signature import calculate_signature
 
-        values = {"OutSum": out_sum, "InvId": inv_id}
+        values = {"OutSum": out_sum, "InvId": inv_id, "Shp_user_id": "123"}
         signature = calculate_signature(values, client.password2, SignatureAlgorithm.MD5)
 
         # Should not raise
@@ -229,7 +230,7 @@ class TestPaymentMixin:
             out_sum=out_sum,
             inv_id=inv_id,
             signature_value=signature,
-            shp_params={"user_id": "123"},
+            shp_params=shp_params,
         )
         assert result is True
 
@@ -258,6 +259,26 @@ class TestPaymentMixin:
                 inv_id="12345",
                 signature_value="INVALID_SIGNATURE",
             )
+
+    def test_verify_success_url_with_shp_params(self, client):
+        """Test verifying SuccessURL with Shp parameters."""
+        out_sum = "100.50"
+        inv_id = "12345"
+        shp_params = {"user_id": "123", "order_id": "456"}
+        # Calculate correct signature WITH shp_params
+        from aiorobokassa.utils.signature import calculate_signature
+
+        values = {"OutSum": out_sum, "InvId": inv_id, "Shp_order_id": "456", "Shp_user_id": "123"}
+        signature = calculate_signature(values, client.password1, SignatureAlgorithm.MD5)
+
+        # Should not raise
+        result = client.verify_success_url(
+            out_sum=out_sum,
+            inv_id=inv_id,
+            signature_value=signature,
+            shp_params=shp_params,
+        )
+        assert result is True
 
     def test_parse_result_url_params(self, client):
         """Test parsing ResultURL parameters."""
@@ -288,3 +309,231 @@ class TestPaymentMixin:
         assert result["inv_id"] == "12345"
         assert result["signature_value"] == "ABC123"
         assert result["shp_params"]["user_id"] == "123"
+
+    def test_create_split_payment_url_basic(self, client):
+        """Test creating basic split payment URL."""
+        split_merchants = [
+            {
+                "id": "merchant1",
+                "amount": 50.00,
+            },
+            {
+                "id": "merchant2",
+                "amount": 50.50,
+            },
+        ]
+
+        url = client.create_split_payment_url(
+            out_amount=Decimal("100.50"),
+            merchant_id="master_merchant",
+            split_merchants=split_merchants,
+        )
+
+        assert url.startswith(client.base_url)
+        assert "invoice=" in url
+        assert "signature=" in url
+
+    def test_create_split_payment_url_with_all_params(self, client):
+        """Test creating split payment URL with all parameters."""
+        from aiorobokassa.models.receipt import Receipt, ReceiptItem
+        from aiorobokassa.enums import TaxRate, TaxSystem, PaymentMethod, PaymentObject
+
+        receipt = Receipt(
+            items=[
+                ReceiptItem(
+                    name="Item 1",
+                    quantity=1,
+                    cost=50.0,
+                    tax=TaxRate.VAT20,
+                    payment_method=PaymentMethod.FULL_PAYMENT,
+                    payment_object=PaymentObject.COMMODITY,
+                )
+            ],
+            sno=TaxSystem.OSN,
+        )
+
+        split_merchants = [
+            {
+                "id": "merchant1",
+                "amount": 50.00,
+                "invoice_id": 100,
+                "receipt": receipt,
+            },
+            {
+                "id": "merchant2",
+                "amount": 50.50,
+            },
+        ]
+
+        shop_params = [
+            {"name": "param1", "value": "value1"},
+            {"name": "param2", "value": "value2"},
+        ]
+
+        url = client.create_split_payment_url(
+            out_amount=Decimal("100.50"),
+            merchant_id="master_merchant",
+            split_merchants=split_merchants,
+            merchant_comment="Test split payment",
+            shop_params=shop_params,
+            email="test@example.com",
+            inc_curr="BankCard",
+            language="ru",
+            is_test=True,
+            expiration_date="2024-12-31T23:59:59",
+        )
+
+        assert url.startswith(client.base_url)
+        assert "invoice=" in url
+        assert "signature=" in url
+
+    def test_create_split_payment_url_with_receipt_dict(self, client):
+        """Test creating split payment URL with receipt as dict."""
+        receipt_dict = {
+            "items": [
+                {
+                    "name": "Item 1",
+                    "quantity": 1,
+                    "cost": 50.0,
+                    "tax": "vat20",
+                }
+            ],
+            "sno": "osn",
+        }
+
+        split_merchants = [
+            {
+                "id": "merchant1",
+                "amount": 50.00,
+                "receipt": receipt_dict,
+            },
+        ]
+
+        url = client.create_split_payment_url(
+            out_amount=Decimal("50.00"),
+            merchant_id="master_merchant",
+            split_merchants=split_merchants,
+        )
+
+        assert url.startswith(client.base_url)
+        assert "invoice=" in url
+        assert "signature=" in url
+
+    def test_create_split_payment_url_with_receipt_json_string(self, client):
+        """Test creating split payment URL with receipt as JSON string."""
+        import json
+
+        receipt_json = json.dumps(
+            {
+                "items": [
+                    {
+                        "name": "Item 1",
+                        "quantity": 1,
+                        "cost": 50.0,
+                        "tax": "vat20",
+                    }
+                ],
+                "sno": "osn",
+            }
+        )
+
+        split_merchants = [
+            {
+                "id": "merchant1",
+                "amount": 50.00,
+                "receipt": receipt_json,
+            },
+        ]
+
+        url = client.create_split_payment_url(
+            out_amount=Decimal("50.00"),
+            merchant_id="master_merchant",
+            split_merchants=split_merchants,
+        )
+
+        assert url.startswith(client.base_url)
+        assert "invoice=" in url
+        assert "signature=" in url
+
+    def test_create_split_payment_url_different_algorithms(self, client):
+        """Test creating split payment URL with different signature algorithms."""
+        split_merchants = [
+            {
+                "id": "merchant1",
+                "amount": 50.00,
+            },
+        ]
+
+        url_md5 = client.create_split_payment_url(
+            out_amount=Decimal("50.00"),
+            merchant_id="master_merchant",
+            split_merchants=split_merchants,
+            signature_algorithm=SignatureAlgorithm.MD5,
+        )
+
+        url_sha256 = client.create_split_payment_url(
+            out_amount=Decimal("50.00"),
+            merchant_id="master_merchant",
+            split_merchants=split_merchants,
+            signature_algorithm=SignatureAlgorithm.SHA256,
+        )
+
+        # URLs should be different due to different signatures
+        assert url_md5 != url_sha256
+
+    def test_create_split_payment_url_with_zero_amount_merchant(self, client):
+        """Test creating split payment URL with merchant having zero amount."""
+        split_merchants = [
+            {
+                "id": "merchant1",
+                "amount": 100.00,
+            },
+            {
+                "id": "merchant2",
+                "amount": 0.00,  # Zero amount is allowed
+            },
+        ]
+
+        url = client.create_split_payment_url(
+            out_amount=Decimal("100.00"),
+            merchant_id="master_merchant",
+            split_merchants=split_merchants,
+        )
+
+        assert url.startswith(client.base_url)
+        assert "invoice=" in url
+        assert "signature=" in url
+
+    def test_create_split_payment_url_signature_verification(self, client):
+        """Test that split payment signature is correctly calculated."""
+        from aiorobokassa.utils.signature import calculate_split_signature
+        from urllib.parse import unquote, parse_qs
+
+        split_merchants = [
+            {
+                "id": "merchant1",
+                "amount": 50.00,
+            },
+        ]
+
+        url = client.create_split_payment_url(
+            out_amount=Decimal("50.00"),
+            merchant_id="master_merchant",
+            split_merchants=split_merchants,
+        )
+
+        # Parse URL to get invoice and signature
+        query_string = url.split("?")[1]
+        params = parse_qs(query_string)
+        invoice_json = unquote(params["invoice"][0])
+        received_signature = params["signature"][0]
+
+        # Calculate expected signature
+        expected_signature = calculate_split_signature(
+            invoice_json=invoice_json,
+            password=client.password1,
+            algorithm=SignatureAlgorithm.MD5,
+        )
+
+        # Signature should match (case-insensitive comparison)
+        assert received_signature.lower() == expected_signature.lower()

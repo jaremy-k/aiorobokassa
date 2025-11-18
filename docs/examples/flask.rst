@@ -55,6 +55,7 @@ Basic Setup
                out_sum=parsed["out_sum"],
                inv_id=parsed["inv_id"],
                signature_value=parsed["signature_value"],
+               shp_params=parsed.get("shp_params"),
            )
            
            # Update order status

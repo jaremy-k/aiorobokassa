@@ -86,7 +86,7 @@ class TestReceiptWithPaymentRequest:
         )
         receipt = Receipt(items=[item], sno=TaxSystem.OSN)
 
-        url = await client.create_payment_url(
+        url = client.create_payment_url(
             out_sum=Decimal("100.00"),
             description="Test payment",
             receipt=receipt,

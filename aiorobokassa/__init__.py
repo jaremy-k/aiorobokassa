@@ -21,8 +21,19 @@ from aiorobokassa.exceptions import (
     XMLParseError,
 )
 from aiorobokassa.models.receipt import Receipt, ReceiptItem
+from aiorobokassa.models.requests import (
+    InvoiceResponse,
+    RefundCreateRequest,
+    RefundCreateResponse,
+    RefundItem,
+    RefundStatusResponse,
+    ShopParam,
+    SplitMerchant,
+    SplitMerchantReceipt,
+    SplitPaymentRequest,
+)
 
-__version__ = "1.0.7"
+__version__ = "1.1.0"
 
 __all__ = [
     "RoboKassaClient",
@@ -36,6 +47,15 @@ __all__ = [
     "InvoiceStatus",
     "Receipt",
     "ReceiptItem",
+    "InvoiceResponse",
+    "RefundItem",
+    "RefundCreateRequest",
+    "RefundCreateResponse",
+    "RefundStatusResponse",
+    "ShopParam",
+    "SplitMerchant",
+    "SplitMerchantReceipt",
+    "SplitPaymentRequest",
     "RoboKassaError",
     "APIError",
     "SignatureError",

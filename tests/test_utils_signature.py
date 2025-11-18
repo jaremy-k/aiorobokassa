@@ -162,6 +162,19 @@ class TestVerifyResultURLSignature:
             out_sum, inv_id, password, invalid_signature, SignatureAlgorithm.MD5
         )
 
+    def test_verify_result_url_signature_with_shp_params(self):
+        """Test ResultURL signature verification with Shp parameters."""
+        out_sum = "100.50"
+        inv_id = "12345"
+        password = "password123"
+        shp_params = {"user_id": "123", "order_id": "456"}
+        # Calculate signature with shp_params
+        values = {"OutSum": out_sum, "InvId": inv_id, "Shp_order_id": "456", "Shp_user_id": "123"}
+        calculated = calculate_signature(values, password, SignatureAlgorithm.MD5)
+        assert verify_result_url_signature(
+            out_sum, inv_id, password, calculated, SignatureAlgorithm.MD5, shp_params=shp_params
+        )
+
 
 class TestVerifySuccessURLSignature:
     """Tests for verify_success_url_signature function."""
@@ -186,4 +199,17 @@ class TestVerifySuccessURLSignature:
         invalid_signature = "INVALID"
         assert not verify_success_url_signature(
             out_sum, inv_id, password, invalid_signature, SignatureAlgorithm.MD5
+        )
+
+    def test_verify_success_url_signature_with_shp_params(self):
+        """Test SuccessURL signature verification with Shp parameters."""
+        out_sum = "100.50"
+        inv_id = "12345"
+        password = "password123"
+        shp_params = {"user_id": "123"}
+        # Calculate signature with shp_params
+        values = {"OutSum": out_sum, "InvId": inv_id, "Shp_user_id": "123"}
+        calculated = calculate_signature(values, password, SignatureAlgorithm.MD5)
+        assert verify_success_url_signature(
+            out_sum, inv_id, password, calculated, SignatureAlgorithm.MD5, shp_params=shp_params
         )

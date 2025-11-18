@@ -13,7 +13,7 @@ from aiorobokassa.enums import (
     TaxSystem,
 )
 from aiorobokassa.models.receipt import Receipt, ReceiptItem
-from aiorobokassa.models.requests import InvoiceItem
+from aiorobokassa.models.requests import InvoiceItem, InvoiceResponse
 
 
 class TestInvoiceMixin:
@@ -41,9 +41,10 @@ class TestInvoiceMixin:
                 description="Test invoice",
             )
 
-            assert result["id"] == "test-id-123"
-            assert result["url"] == "https://auth.robokassa.ru/merchant/Invoice/test-id-123"
-            assert result["inv_id"] == 12345
+            assert isinstance(result, InvoiceResponse)
+            assert result.id == "test-id-123"
+            assert result.url == "https://auth.robokassa.ru/merchant/Invoice/test-id-123"
+            assert result.inv_id == 12345
 
     @pytest.mark.asyncio
     async def test_create_invoice_with_all_params(self, client):
@@ -85,8 +86,9 @@ class TestInvoiceMixin:
                 fail_url="https://example.com/fail",
             )
 
-            assert result["id"] == "test-id-456"
-            assert result["inv_id"] == 67890
+            assert isinstance(result, InvoiceResponse)
+            assert result.id == "test-id-456"
+            assert result.inv_id == 67890
 
     @pytest.mark.asyncio
     async def test_create_invoice_jwt_structure(self, client):
@@ -172,7 +174,8 @@ class TestInvoiceMixin:
                 signature_algorithm=SignatureAlgorithm.SHA256,
             )
 
-            assert result["id"] == "test-id"
+            assert isinstance(result, InvoiceResponse)
+            assert result.id == "test-id"
 
     @pytest.mark.asyncio
     async def test_create_invoice_error(self, client):
@@ -272,7 +275,8 @@ class TestInvoiceMixin:
                 receipt=receipt,
             )
 
-            assert result["id"] == "test-id"
+            assert isinstance(result, InvoiceResponse)
+            assert result.id == "test-id"
             # Verify request was made
             assert mock_post.called
 
@@ -305,7 +309,8 @@ class TestInvoiceMixin:
                 receipt=receipt_dict,
             )
 
-            assert result["id"] == "test-id"
+            assert isinstance(result, InvoiceResponse)
+            assert result.id == "test-id"
 
     @pytest.mark.asyncio
     async def test_create_invoice_with_receipt_json_string(self, client):
@@ -340,7 +345,8 @@ class TestInvoiceMixin:
                 receipt=receipt_json,
             )
 
-            assert result["id"] == "test-id"
+            assert isinstance(result, InvoiceResponse)
+            assert result.id == "test-id"
 
     @pytest.mark.asyncio
     async def test_create_invoice_receipt_and_invoice_items_conflict(self, client):
@@ -400,4 +406,5 @@ class TestInvoiceMixin:
                 receipt=receipt,
             )
 
-            assert result["id"] == "test-id"
+            assert isinstance(result, InvoiceResponse)
+            assert result.id == "test-id"

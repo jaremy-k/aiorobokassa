@@ -1,32 +1,80 @@
+[![Downloads](https://pepy.tech/badge/aiorobokassa)](https://pepy.tech/project/aiorobokassa)
+[![Downloads](https://pepy.tech/badge/aiorobokassa/month)](https://pepy.tech/project/aiorobokassa)
+[![Downloads](https://pepy.tech/badge/aiorobokassa/week)](https://pepy.tech/project/aiorobokassa)
+
+<div align="center">
+
+![aiorobokassa banner](docs/_static/banner.png)
+
 # aiorobokassa
 
-Async Python library for RoboKassa payment gateway integration.
+**Async Python library for RoboKassa payment gateway integration**
 
-📚 [Documentation](https://aiorobokassa.readthedocs.io) | 🐛 [Issue Tracker](https://github.com/masasibata/aiorobokassa/issues) | 📦 [PyPI](https://pypi.org/project/aiorobokassa/)
+`aiorobokassa` is a modern async Python library for integrating with RoboKassa payment gateway. The library provides full support for RoboKassa API, including payment link generation, notification handling, invoice creation, refunds, fiscalization, and more.
 
-## Features
+</div>
 
-- ✅ **Full async/await support** with `aiohttp` for high performance
-- ✅ **Payment link generation** with customizable parameters
-- ✅ **Notification handling** (ResultURL, SuccessURL) with signature verification
-- ✅ **Invoice creation** via Invoice API (JWT-based)
-- ✅ **Refund operations** (full and partial)
-- ✅ **Fiscalization support** (Receipt) with Pydantic models and enums for ФЗ-54 compliance
-- ✅ **Signature verification** (MD5, SHA256, SHA512)
-- ✅ **Type hints** throughout the codebase
+## ✨ Features
+
+- 🚀 **Full async/await support** with `aiohttp` for high performance
+- 💳 **Payment link generation** with customizable parameters
+- 🔔 **Notification handling** (ResultURL, SuccessURL) with signature verification
+- 📄 **Invoice creation** via Invoice API (JWT-based)
+- 💰 **Refund operations** (full and partial) via legacy XML API and modern JWT API
+- 🧾 **Fiscalization support** (Receipt) with Pydantic models and enums for ФЗ-54 compliance
+- 🔐 **Signature verification** (MD5, SHA256, SHA512)
+- 🛡️ **Type hints** throughout the codebase
 - ✅ **Pydantic validation** for all requests and responses
-- ✅ **Test mode support** for development
-- ✅ **Clean architecture** (SOLID, DRY, KISS principles)
+- 🧪 **Test mode support** for development
+- 🏗️ **Clean architecture** (SOLID, DRY, KISS principles)
 
-## Installation
+## 🔗 Links
+
+- 📚 **Documentation:** [aiorobokassa.readthedocs.io](https://aiorobokassa.readthedocs.io)
+- 🐛 **Issue Tracker:** [GitHub Issues](https://github.com/masasibata/aiorobokassa/issues)
+- 📦 **PyPI:** [pypi.org/project/aiorobokassa](https://pypi.org/project/aiorobokassa/)
+- 🖱️ **Developer contacts:** [![Dev-Telegram](https://img.shields.io/badge/Telegram-blue.svg?style=flat-square&logo=telegram)](https://t.me/masaasibaata)
+- 💝 **Support project:** [![Tribute](https://img.shields.io/badge/Support%20Project-Tribute-green.svg?style=flat-square&logo=telegram)](https://t.me/tribute/app?startapp=dzqR)
+
+## 🐦 Dependencies
+
+| Library  |                       Description                       |
+| :------: | :-----------------------------------------------------: |
+| aiohttp  | Asynchronous HTTP Client/Server for asyncio and Python. |
+| pydantic |                   JSON Data Validator                   |
+
+## 📁 Project Structure
+
+```
+aiorobokassa/
+├── api/                    # API mixins
+│   ├── base.py            # Base API client
+│   ├── invoice.py        # Invoice operations
+│   ├── payment.py        # Payment operations
+│   └── refund.py         # Refund operations
+├── models/                # Pydantic models
+│   ├── receipt.py        # Receipt models for fiscalization
+│   └── requests.py       # Request/response models
+├── utils/                 # Utility functions
+│   ├── helpers.py        # Helper functions
+│   ├── jwt.py            # JWT token creation
+│   ├── signature.py      # Signature calculation
+│   └── xml.py            # XML parsing
+├── client.py             # Main RoboKassa client
+├── constants.py          # Constants
+├── enums.py              # Enums
+└── exceptions.py         # Custom exceptions
+```
+
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
 pip install aiorobokassa
 ```
 
-## Quick Start
-
-### Basic Payment Link Generation
+### Basic Usage
 
 ```python
 import asyncio
@@ -58,30 +106,168 @@ async def main():
 asyncio.run(main())
 ```
 
-### Using Context Manager
+## 🎯 Supported Features
+
+The library supports **all RoboKassa API features**:
+
+- 💳 **Payments** — payment link generation with customizable parameters
+- 🔔 **Notifications** — ResultURL and SuccessURL signature verification
+- 📄 **Invoices** — create and manage invoices via Invoice API (JWT-based)
+- 💰 **Refunds** — full and partial refunds via legacy XML API and modern JWT API
+- 🧾 **Fiscalization** — receipt generation for ФЗ-54 compliance
+- 🔐 **Signatures** — MD5, SHA256, SHA512 signature algorithms
+- 🧪 **Test Mode** — development and testing support
+
+## 📋 Main Methods
+
+### 💳 Payments
 
 ```python
-import asyncio
 from decimal import Decimal
 from aiorobokassa import RoboKassaClient
 
-async def main():
-    async with RoboKassaClient(
-        merchant_login="your_merchant_login",
-        password1="password1",
-        password2="password2",
-        test_mode=True,
-    ) as client:
-        payment_url = await client.create_payment_url(
-            out_sum=Decimal("100.00"),
-            description="Test payment",
-        )
-        print(f"Payment URL: {payment_url}")
+# Create payment URL
+payment_url = await client.create_payment_url(
+    out_sum=Decimal("100.00"),
+    description="Payment for order #12345",
+    inv_id=12345,
+    email="customer@example.com",
+    culture="ru",
+    user_parameters={"user_id": "123", "order_id": "456"},
+)
 
-asyncio.run(main())
+# Verify ResultURL notification
+params = client.parse_result_url_params(request_params)
+client.verify_result_url(
+    out_sum=params["out_sum"],
+    inv_id=params["inv_id"],
+    signature_value=params["signature_value"],
+    shp_params=params.get("shp_params"),
+)
+
+# Verify SuccessURL redirect
+params = client.parse_success_url_params(request_params)
+client.verify_success_url(
+    out_sum=params["out_sum"],
+    inv_id=params["inv_id"],
+    signature_value=params["signature_value"],
+)
 ```
 
-### Handling Notifications
+### 📄 Invoices
+
+```python
+from aiorobokassa import RoboKassaClient, InvoiceType
+from aiorobokassa.models.requests import InvoiceItem
+from aiorobokassa.enums import TaxRate, PaymentMethod, PaymentObject
+
+# Create simple invoice
+result = await client.create_invoice(
+    out_sum=Decimal("100.00"),
+    description="Invoice payment",
+    invoice_type=InvoiceType.ONE_TIME,
+    inv_id=123,
+    culture="ru",
+)
+
+# Create invoice with fiscalization
+invoice_items = [
+    InvoiceItem(
+        name="Service 1",
+        quantity=1,
+        cost=100.0,
+        tax=TaxRate.VAT20,
+        payment_method=PaymentMethod.FULL_PAYMENT,
+        payment_object=PaymentObject.SERVICE,
+    )
+]
+
+result = await client.create_invoice(
+    out_sum=Decimal("100.00"),
+    description="Invoice with items",
+    invoice_items=invoice_items,
+)
+
+# Deactivate invoice
+await client.deactivate_invoice(inv_id=123)
+
+# Get invoice information list
+invoices = await client.get_invoice_information_list(
+    current_page=1,
+    page_size=10,
+    invoice_statuses=["paid", "notpaid"],
+)
+```
+
+### 💰 Refunds
+
+```python
+from decimal import Decimal
+
+# Legacy XML API - Full refund
+refund_result = await client.create_refund(invoice_id=123)
+
+# Legacy XML API - Partial refund
+partial_refund = await client.create_refund(
+    invoice_id=123,
+    amount=Decimal("50.00"),
+)
+
+# Legacy XML API - Check refund status
+status = await client.get_refund_status(invoice_id=123)
+
+# Modern JWT API - Create refund (requires password3)
+refund = await client.create_refund_v2(
+    op_key="operation_key_from_payment",
+    refund_sum=Decimal("50.00"),
+)
+
+# Modern JWT API - Get refund status
+refund_status = await client.get_refund_status_v2(
+    request_id=refund.request_id
+)
+```
+
+### 🧾 Fiscalization (Receipt) - ФЗ-54
+
+For clients using RoboKassa's cloud or cash solutions, fiscalization is required:
+
+```python
+from aiorobokassa import (
+    RoboKassaClient,
+    Receipt,
+    ReceiptItem,
+    TaxRate,
+    TaxSystem,
+    PaymentMethod,
+    PaymentObject,
+)
+
+# Create receipt item
+item = ReceiptItem(
+    name="Товар 1",
+    quantity=1,
+    sum=Decimal("100.00"),
+    tax=TaxRate.VAT10,
+    payment_method=PaymentMethod.FULL_PAYMENT,
+    payment_object=PaymentObject.COMMODITY,
+)
+
+# Create receipt
+receipt = Receipt(
+    items=[item],
+    sno=TaxSystem.OSN,
+)
+
+# Create payment URL with receipt
+url = await client.create_payment_url(
+    out_sum=Decimal("100.00"),
+    description="Payment with receipt",
+    receipt=receipt,
+)
+```
+
+### 🔔 Handling Notifications
 
 #### ResultURL (Server-to-Server Notification)
 
@@ -138,6 +324,7 @@ async def handle_success_url(request_params: dict):
             out_sum=params["out_sum"],
             inv_id=params["inv_id"],
             signature_value=params["signature_value"],
+            shp_params=params.get("shp_params"),
         )
 
         # Show success page to user
@@ -146,369 +333,48 @@ async def handle_success_url(request_params: dict):
         return "Payment verification failed"
 ```
 
-### Creating Invoice
-
-```python
-import asyncio
-from decimal import Decimal
-from aiorobokassa import RoboKassaClient, InvoiceType
-from aiorobokassa.models.requests import InvoiceItem
-from aiorobokassa.enums import TaxRate, PaymentMethod, PaymentObject
-
-async def main():
-    async with RoboKassaClient(
-        merchant_login="your_merchant_login",
-        password1="password1",
-        password2="password2",
-        test_mode=True,
-    ) as client:
-        # Simple invoice
-        result = await client.create_invoice(
-            out_sum=Decimal("100.00"),
-            description="Invoice payment",
-            invoice_type=InvoiceType.ONE_TIME,
-            inv_id=123,
-            culture="ru",
-        )
-
-        print(f"Invoice URL: {result['url']}")
-        print(f"Invoice ID: {result['id']}")
-
-        # Invoice with fiscalization
-        invoice_items = [
-            InvoiceItem(
-                name="Service 1",
-                quantity=1,
-                cost=100.0,
-                tax=TaxRate.VAT20,
-                payment_method=PaymentMethod.FULL_PAYMENT,
-                payment_object=PaymentObject.SERVICE,
-            )
-        ]
-
-        result = await client.create_invoice(
-            out_sum=Decimal("100.00"),
-            description="Invoice with items",
-            invoice_items=invoice_items,
-        )
-
-asyncio.run(main())
-```
-
-### Fiscalization (Receipt) - ФЗ-54
-
-For clients using Robokassa's cloud or cash solutions, fiscalization is required:
-
-```python
-import asyncio
-from decimal import Decimal
-from aiorobokassa import (
-    RoboKassaClient,
-    Receipt,
-    ReceiptItem,
-    TaxRate,
-    TaxSystem,
-    PaymentMethod,
-    PaymentObject,
-)
-
-async def main():
-    async with RoboKassaClient(
-        merchant_login="your_merchant_login",
-        password1="password1",
-        password2="password2",
-        test_mode=True,
-    ) as client:
-        # Create receipt item
-        item = ReceiptItem(
-            name="Товар 1",
-            quantity=1,
-            sum=Decimal("100.00"),
-            tax=TaxRate.VAT10,
-            payment_method=PaymentMethod.FULL_PAYMENT,
-            payment_object=PaymentObject.COMMODITY,
-        )
-
-        # Create receipt
-        receipt = Receipt(
-            items=[item],
-            sno=TaxSystem.OSN,
-        )
-
-        # Create payment URL with receipt
-        url = await client.create_payment_url(
-            out_sum=Decimal("100.00"),
-            description="Payment with receipt",
-            receipt=receipt,
-        )
-
-        print(f"Payment URL: {url}")
-
-asyncio.run(main())
-```
-
-### Refunds
+## 🔧 Context Manager
 
 ```python
 import asyncio
 from decimal import Decimal
 from aiorobokassa import RoboKassaClient
 
-async def main():
-    async with RoboKassaClient(
-        merchant_login="your_merchant_login",
-        password1="password1",
-        password2="password2",
-        test_mode=True,
-    ) as client:
-        # Create full refund
-        refund_result = await client.create_refund(
-            invoice_id=123,
-        )
-
-        # Or partial refund
-        partial_refund = await client.create_refund(
-            invoice_id=123,
-            amount=Decimal("50.00"),
-        )
-
-        # Check refund status
-        status = await client.get_refund_status(
-            invoice_id=123,
-        )
-
-        print(f"Refund status: {status}")
-
-asyncio.run(main())
+async with RoboKassaClient(
+    merchant_login="your_merchant_login",
+    password1="password1",
+    password2="password2",
+    test_mode=True,
+) as client:
+    payment_url = await client.create_payment_url(
+        out_sum=Decimal("100.00"),
+        description="Test payment",
+    )
+    print(f"Payment URL: {payment_url}")
+    # Client automatically closes
 ```
 
-## API Reference
+## 🛠️ Installation and Setup
 
-### RoboKassaClient
+### Requirements
 
-Main client class for RoboKassa API.
+- Python 3.8+
+- aiohttp >= 3.8.0
+- pydantic >= 2.0.0
 
-```python
-RoboKassaClient(
-    merchant_login: str,
-    password1: str,
-    password2: str,
-    test_mode: bool = False,
-    session: Optional[aiohttp.ClientSession] = None,
-    timeout: aiohttp.ClientTimeout = None,
-)
-```
-
-**Parameters:**
-
-- `merchant_login`: Your RoboKassa merchant login
-- `password1`: Password #1 for signature calculation
-- `password2`: Password #2 for ResultURL verification
-- `test_mode`: Enable test mode (default: False)
-- `session`: Optional aiohttp session (auto-created if not provided)
-- `timeout`: Optional timeout for requests
-
-### Methods
-
-#### `create_payment_url()`
-
-Generate payment URL for redirecting user to RoboKassa.
-
-```python
-async client.create_payment_url(
-    out_sum: Decimal,
-    description: str,
-    inv_id: Optional[int] = None,
-    email: Optional[str] = None,
-    culture: Optional[str] = None,
-    encoding: Optional[str] = None,
-    is_test: Optional[int] = None,
-    expiration_date: Optional[str] = None,
-    user_parameters: Optional[Dict[str, str]] = None,
-    receipt: Optional[Union[Receipt, str, Dict[str, Any]]] = None,
-    signature_algorithm: Union[str, SignatureAlgorithm] = "MD5",
-) -> str
-```
-
-**Parameters:**
-
-- `out_sum`: Payment amount (required)
-- `description`: Payment description (required)
-- `inv_id`: Invoice ID (optional)
-- `email`: Customer email (optional)
-- `culture`: Language code - "ru" or "en" (optional, default: "ru")
-- `encoding`: Encoding (optional, default: "utf-8")
-- `is_test`: Test mode flag (optional)
-- `expiration_date`: Payment expiration date (optional)
-- `user_parameters`: Additional user parameters (Shp\_\*) (optional)
-- `receipt`: Receipt data for fiscalization - Receipt model, JSON string or dict (optional)
-- `signature_algorithm`: Signature algorithm - "MD5", "SHA256", or "SHA512" (optional, default: "MD5")
-
-#### `verify_result_url()`
-
-Verify ResultURL notification signature.
-
-```python
-client.verify_result_url(
-    out_sum: str,
-    inv_id: str,
-    signature_value: str,
-    shp_params: Optional[Dict[str, str]] = None,
-    signature_algorithm: str = "MD5",
-) -> bool
-```
-
-#### `verify_success_url()`
-
-Verify SuccessURL redirect signature.
-
-```python
-client.verify_success_url(
-    out_sum: str,
-    inv_id: str,
-    signature_value: str,
-    shp_params: Optional[Dict[str, str]] = None,
-    signature_algorithm: str = "MD5",
-) -> bool
-```
-
-#### `parse_result_url_params()`
-
-Parse ResultURL parameters from request (static method).
-
-```python
-RoboKassaClient.parse_result_url_params(params: Dict[str, str]) -> Dict[str, str]
-```
-
-#### `parse_success_url_params()`
-
-Parse SuccessURL parameters from request (static method).
-
-```python
-RoboKassaClient.parse_success_url_params(params: Dict[str, str]) -> Dict[str, str]
-```
-
-#### `create_invoice()`
-
-Create invoice via Invoice API (JWT-based).
-
-```python
-async client.create_invoice(
-    out_sum: Union[Decimal, float, int, str],
-    description: str,
-    invoice_type: Union[InvoiceType, str] = InvoiceType.ONE_TIME,
-    inv_id: Optional[int] = None,
-    culture: Optional[str] = None,
-    merchant_comments: Optional[str] = None,
-    invoice_items: Optional[List[InvoiceItem]] = None,
-    user_fields: Optional[Dict[str, str]] = None,
-    success_url: Optional[str] = None,
-    success_url_method: str = "GET",
-    fail_url: Optional[str] = None,
-    fail_url_method: str = "GET",
-    signature_algorithm: Union[str, SignatureAlgorithm] = "MD5",
-) -> Dict[str, Any]
-```
-
-#### `create_refund()`
-
-Create refund for invoice.
-
-```python
-async client.create_refund(
-    invoice_id: int,
-    amount: Optional[Decimal] = None,
-    signature_algorithm: str = "MD5",
-) -> Dict[str, str]
-```
-
-#### `get_refund_status()`
-
-Get refund status for invoice.
-
-```python
-async client.get_refund_status(
-    invoice_id: int,
-    signature_algorithm: str = "MD5",
-) -> Dict[str, str]
-```
-
-## Exceptions
-
-All exceptions inherit from `RoboKassaError`:
-
-- `RoboKassaError`: Base exception for all errors
-- `SignatureError`: Signature verification failed
-- `APIError`: API request failed (includes status code and response)
-- `ValidationError`: Data validation failed (Pydantic validation errors)
-- `ConfigurationError`: Client configuration is invalid
-  - `InvalidSignatureAlgorithmError`: Unsupported signature algorithm
-- `XMLParseError`: Failed to parse XML response
-
-## Models and Enums
-
-### Receipt Models
-
-For fiscalization (ФЗ-54):
-
-- `Receipt`: Main receipt model
-- `ReceiptItem`: Receipt item model
-
-### Enums
-
-- `TaxSystem`: Tax system (OSN, USN_INCOME, USN_INCOME_OUTCOME, ESN, PATENT)
-- `TaxRate`: Tax rates (NONE, VAT0, VAT10, VAT20, VAT110, VAT120, etc.)
-- `PaymentMethod`: Payment methods (FULL_PAYMENT, PREPAYMENT, etc.)
-- `PaymentObject`: Payment objects (COMMODITY, SERVICE, JOB, etc.)
-- `SignatureAlgorithm`: Signature algorithms (MD5, SHA256, SHA512)
-- `Culture`: Supported languages (RU, EN)
-
-## Requirements
-
-- **Python**: 3.8+
-- **aiohttp**: >= 3.8.0
-- **pydantic**: >= 2.0.0
-
-## Development
-
-### Installation
+### Installation via pip
 
 ```bash
-# Clone the repository
-git clone https://github.com/masasibata/aiorobokassa.git
-cd aiorobokassa
-
-# Install with Poetry
-poetry install --extras dev
-
-# Or with pip
-pip install -e ".[dev]"
+pip install aiorobokassa
 ```
 
-### Running Tests
+### Installation via Poetry
 
 ```bash
-# With Poetry
-poetry run pytest
-
-# Or with make
-make test
+poetry add aiorobokassa
 ```
 
-### Code Quality
-
-```bash
-# Format code
-make format
-
-# Lint code
-make lint
-
-# Type checking
-make type-check
-```
-
-## Documentation
+## 📖 Documentation
 
 📚 **Full documentation is available at [aiorobokassa.readthedocs.io](https://aiorobokassa.readthedocs.io)**
 
@@ -523,16 +389,114 @@ The documentation includes:
 
 For more information about RoboKassa API, visit [official RoboKassa documentation](https://docs.robokassa.ru/).
 
-## Contributing
+## 🤝 Supporting the Project
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+If the library was helpful, you can support the project:
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- 💝 **[Tribute](https://t.me/tribute/app?startapp=dzqR)** — support through Telegram
+- 🐛 **Report a bug** — [GitHub Issues](https://github.com/masasibata/aiorobokassa/issues)
+- 💬 **Contact developer** — [![Dev-Telegram](https://img.shields.io/badge/Telegram-blue.svg?style=flat-square&logo=telegram)](https://t.me/masaasibaata)
 
-## License
+## 🚀 Contributing
+
+We welcome contributions to the library! Here's how you can help:
+
+### Quick Start for Developers
+
+```bash
+# Clone the repository
+git clone https://github.com/masasibata/aiorobokassa.git
+cd aiorobokassa
+
+# Install dependencies for development
+poetry install --extras dev
+
+# Or with pip
+pip install -e ".[dev]"
+```
+
+### Available Commands
+
+```bash
+# Testing
+make test                 # Run tests
+make test-cov            # Tests with code coverage
+make test-fast           # Fast tests without coverage
+
+# Code Quality
+make lint                # Linting (Black)
+make format              # Format code
+make type-check          # Type checking (MyPy)
+make all-checks          # All quality checks
+
+# Build and Publish
+make build               # Build package
+make clean               # Clean artifacts
+
+# Documentation
+make docs                # Build documentation
+make docs-serve          # Local documentation server
+```
+
+### Contribution Process
+
+1. **Fork the repository** on GitHub
+2. **Create a branch** for your changes:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Make changes** and ensure all checks pass:
+   ```bash
+   make all-checks
+   ```
+4. **Commit your changes**:
+   ```bash
+   git add .
+   git commit -m "feat: add new feature"
+   ```
+5. **Push your changes**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+6. **Create a Pull Request** on GitHub
+
+### Pull Request Requirements
+
+- ✅ **All tests pass** (`make test`)
+- ✅ **Code is formatted** (`make format`)
+- ✅ **Linting passes** (`make lint`)
+- ✅ **Type checking passes** (`make type-check`)
+- ✅ **Documentation updated** (if necessary)
+- ✅ **Descriptive commit message**
+
+### Contribution Types
+
+- 🐛 **Bug fixes** — fixing errors in code
+- ✨ **New features** — adding new functionality
+- 📚 **Documentation** — improving documentation and examples
+- ⚡ **Optimization** — improving performance
+- 🧪 **Tests** — adding or improving tests
+- 🔧 **Infrastructure** — improving development tools
+
+### Commit Conventions
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```bash
+feat: add new payment method support
+fix: resolve timeout issue in payment creation
+docs: update API documentation
+test: add tests for refund functionality
+refactor: improve error handling
+```
+
+### Getting Help
+
+- 💬 **Questions** — [GitHub Issues](https://github.com/masasibata/aiorobokassa/issues)
+- 🐛 **Problems** — [GitHub Issues](https://github.com/masasibata/aiorobokassa/issues)
+
+## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+
+---
