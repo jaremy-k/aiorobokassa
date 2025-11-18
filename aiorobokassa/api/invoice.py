@@ -1,5 +1,6 @@
 """Invoice operations for RoboKassa API."""
 
+import json
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
@@ -101,8 +102,6 @@ class InvoiceMixin:
             elif isinstance(receipt, dict):
                 receipt_model = Receipt.from_dict(receipt)
             elif isinstance(receipt, str):
-                import json
-
                 receipt_dict = json.loads(receipt)
                 receipt_model = Receipt.from_dict(receipt_dict)
             else:
@@ -148,9 +147,11 @@ class InvoiceMixin:
         jwt_token = create_jwt_token(payload, secret_key, signature_algorithm)
 
         # Send request (JWT token wrapped in JSON object with "request" field)
+        # Use data=json.dumps() instead of json= to send JSON string, not object
+        request_body = json.dumps({"request": jwt_token}, ensure_ascii=False)
         response = await client._post(
             f"{INVOICE_API_BASE_URL}/CreateInvoice",
-            json={"request": jwt_token},
+            data=request_body.encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
         async with response:
@@ -211,9 +212,11 @@ class InvoiceMixin:
         jwt_token = create_jwt_token(payload, secret_key, signature_algorithm)
 
         # Send request (JWT token wrapped in JSON object with "request" field)
+        # Use data=json.dumps() instead of json= to send JSON string, not object
+        request_body = json.dumps({"request": jwt_token}, ensure_ascii=False)
         response = await client._post(
             f"{INVOICE_API_BASE_URL}/DeactivateInvoice",
-            json={"request": jwt_token},
+            data=request_body.encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
         async with response:
@@ -297,9 +300,11 @@ class InvoiceMixin:
         jwt_token = create_jwt_token(payload, secret_key, signature_algorithm)
 
         # Send request (JWT token wrapped in JSON object with "request" field)
+        # Use data=json.dumps() instead of json= to send JSON string, not object
+        request_body = json.dumps({"request": jwt_token}, ensure_ascii=False)
         response = await client._post(
             f"{INVOICE_API_BASE_URL}/GetInvoiceInformationList",
-            json={"request": jwt_token},
+            data=request_body.encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
         async with response:
