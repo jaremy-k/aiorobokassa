@@ -22,7 +22,7 @@ from aiorobokassa.exceptions import (
 )
 from aiorobokassa.models.receipt import Receipt, ReceiptItem
 
-__version__ = "1.0.5"
+__version__ = "1.0.7"
 
 __all__ = [
     "RoboKassaClient",

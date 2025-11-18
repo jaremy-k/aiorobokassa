@@ -146,13 +146,10 @@ class InvoiceMixin:
         secret_key = f"{client.merchant_login}:{client.password1}"
         jwt_token = create_jwt_token(payload, secret_key, signature_algorithm)
 
-        # Send request (JWT token wrapped in JSON object with "request" field)
-        # Use data=json.dumps() instead of json= to send JSON string, not object
-        request_body = json.dumps({"request": jwt_token}, ensure_ascii=False)
+        # aiohttp will serialize the string as JSON string (with quotes)
         response = await client._post(
             f"{INVOICE_API_BASE_URL}/CreateInvoice",
-            data=request_body.encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            json=jwt_token,
         )
         async with response:
             result = await response.json()
@@ -211,13 +208,11 @@ class InvoiceMixin:
         secret_key = f"{client.merchant_login}:{client.password1}"
         jwt_token = create_jwt_token(payload, secret_key, signature_algorithm)
 
-        # Send request (JWT token wrapped in JSON object with "request" field)
-        # Use data=json.dumps() instead of json= to send JSON string, not object
-        request_body = json.dumps({"request": jwt_token}, ensure_ascii=False)
+        # Send request using json= parameter (like in robokassa library)
+        # aiohttp will serialize the string as JSON string (with quotes)
         response = await client._post(
             f"{INVOICE_API_BASE_URL}/DeactivateInvoice",
-            data=request_body.encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            json=jwt_token,
         )
         async with response:
             result = await response.json()
@@ -299,13 +294,11 @@ class InvoiceMixin:
         secret_key = f"{client.merchant_login}:{client.password1}"
         jwt_token = create_jwt_token(payload, secret_key, signature_algorithm)
 
-        # Send request (JWT token wrapped in JSON object with "request" field)
-        # Use data=json.dumps() instead of json= to send JSON string, not object
-        request_body = json.dumps({"request": jwt_token}, ensure_ascii=False)
+        # Send request using json= parameter (like in robokassa library)
+        # aiohttp will serialize the string as JSON string (with quotes)
         response = await client._post(
             f"{INVOICE_API_BASE_URL}/GetInvoiceInformationList",
-            data=request_body.encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            json=jwt_token,
         )
         async with response:
             result = await response.json()
