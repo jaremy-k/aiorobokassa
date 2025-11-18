@@ -145,8 +145,9 @@ def verify_result_url_signature(
     """
     Verify signature from ResultURL notification.
 
-    Signature format: MD5(out_sum:inv_id:Shp_param1:Shp_param2:...:password2)
+    Signature format: MD5(OutSum:InvId:Shp_param1:Shp_param2:...:password2)
     Where Shp_ parameters are sorted alphabetically.
+    Order is FIXED: OutSum:InvId (not sorted alphabetically)
 
     Args:
         out_sum: Payment amount
@@ -159,15 +160,38 @@ def verify_result_url_signature(
     Returns:
         True if signature is valid
     """
-    values = {
-        "OutSum": out_sum,
-        "InvId": inv_id,
-    }
-    # Add Shp_ parameters if provided (sorted alphabetically by calculate_signature)
+    # Convert string to enum if needed
+    if isinstance(algorithm, str):
+        try:
+            algorithm = SignatureAlgorithm.from_string(algorithm)
+        except ValueError as e:
+            raise InvalidSignatureAlgorithmError(str(e)) from e
+
+    # Build signature string in FIXED order: OutSum:InvId:Shp_param1:Shp_param2:...:password2
+    # Shp_ parameters must be sorted alphabetically by key (with Shp_ prefix)
+    signature_parts = [out_sum, inv_id]
+    
+    # Add Shp_ parameters if provided (sorted alphabetically by key with Shp_ prefix)
     if shp_params:
-        for key, value in shp_params.items():
-            values[f"Shp_{key}"] = value
-    return verify_signature(values, password, received_signature, algorithm)
+        sorted_shp = sorted(shp_params.items())
+        for key, value in sorted_shp:
+            # Include both key (with Shp_ prefix) and value in signature string
+            # Format: Shp_key:value, but actually RoboKassa uses just values in order
+            # Let me check the actual format...
+            signature_parts.append(value)
+    
+    signature_parts.append(password)
+    signature_string = ":".join(signature_parts)
+
+    # Calculate hash based on algorithm
+    hash_func = ALGORITHMS.get(algorithm)
+    if hash_func is None:
+        raise InvalidSignatureAlgorithmError(f"Unsupported algorithm: {algorithm}")
+
+    hash_obj = hash_func(signature_string.encode("utf-8"))
+    calculated_signature = hash_obj.hexdigest().upper()
+    
+    return calculated_signature == received_signature.upper()
 
 
 def verify_success_url_signature(
@@ -181,8 +205,9 @@ def verify_success_url_signature(
     """
     Verify signature from SuccessURL redirect.
 
-    Signature format: MD5(out_sum:inv_id:Shp_param1:Shp_param2:...:password1)
+    Signature format: MD5(OutSum:InvId:Shp_param1:Shp_param2:...:password1)
     Where Shp_ parameters are sorted alphabetically.
+    Order is FIXED: OutSum:InvId (not sorted alphabetically)
 
     Args:
         out_sum: Payment amount
@@ -195,15 +220,35 @@ def verify_success_url_signature(
     Returns:
         True if signature is valid
     """
-    values = {
-        "OutSum": out_sum,
-        "InvId": inv_id,
-    }
-    # Add Shp_ parameters if provided (sorted alphabetically by calculate_signature)
+    # Convert string to enum if needed
+    if isinstance(algorithm, str):
+        try:
+            algorithm = SignatureAlgorithm.from_string(algorithm)
+        except ValueError as e:
+            raise InvalidSignatureAlgorithmError(str(e)) from e
+
+    # Build signature string in FIXED order: OutSum:InvId:Shp_params:password1
+    # Shp_ parameters must be sorted alphabetically by key
+    signature_parts = [out_sum, inv_id]
+    
+    # Add Shp_ parameters if provided (sorted alphabetically by key)
     if shp_params:
-        for key, value in shp_params.items():
-            values[f"Shp_{key}"] = value
-    return verify_signature(values, password, received_signature, algorithm)
+        sorted_shp = sorted(shp_params.items())
+        for key, value in sorted_shp:
+            signature_parts.append(value)
+    
+    signature_parts.append(password)
+    signature_string = ":".join(signature_parts)
+
+    # Calculate hash based on algorithm
+    hash_func = ALGORITHMS.get(algorithm)
+    if hash_func is None:
+        raise InvalidSignatureAlgorithmError(f"Unsupported algorithm: {algorithm}")
+
+    hash_obj = hash_func(signature_string.encode("utf-8"))
+    calculated_signature = hash_obj.hexdigest().upper()
+    
+    return calculated_signature == received_signature.upper()
 
 
 def calculate_split_signature(

@@ -191,11 +191,10 @@ class TestPaymentMixin:
         """Test verifying valid ResultURL signature."""
         out_sum = "100.50"
         inv_id = "12345"
-        # Calculate correct signature for ResultURL (uses password2)
-        from aiorobokassa.utils.signature import calculate_signature
-
-        values = {"OutSum": out_sum, "InvId": inv_id}
-        signature = calculate_signature(values, client.password2, SignatureAlgorithm.MD5)
+        # Calculate correct signature for ResultURL (uses password2) with correct order: OutSum:InvId:password2
+        import hashlib
+        signature_string = f"{out_sum}:{inv_id}:{client.password2}"
+        signature = hashlib.md5(signature_string.encode("utf-8")).hexdigest().upper()
 
         # Verify using client method
         result = client.verify_result_url(
@@ -219,11 +218,15 @@ class TestPaymentMixin:
         out_sum = "100.50"
         inv_id = "12345"
         shp_params = {"user_id": "123"}
-        # Calculate correct signature WITH shp_params
-        from aiorobokassa.utils.signature import calculate_signature
-
-        values = {"OutSum": out_sum, "InvId": inv_id, "Shp_user_id": "123"}
-        signature = calculate_signature(values, client.password2, SignatureAlgorithm.MD5)
+        # Calculate correct signature WITH shp_params in correct order: OutSum:InvId:Shp_user_id:password2
+        import hashlib
+        sorted_shp = sorted(shp_params.items())
+        signature_parts = [out_sum, inv_id]
+        for key, value in sorted_shp:
+            signature_parts.append(value)
+        signature_parts.append(client.password2)
+        signature_string = ":".join(signature_parts)
+        signature = hashlib.md5(signature_string.encode("utf-8")).hexdigest().upper()
 
         # Should not raise
         result = client.verify_result_url(
@@ -238,11 +241,10 @@ class TestPaymentMixin:
         """Test verifying valid SuccessURL signature."""
         out_sum = "100.50"
         inv_id = "12345"
-        # Calculate correct signature using password1
-        from aiorobokassa.utils.signature import calculate_signature
-
-        values = {"OutSum": out_sum, "InvId": inv_id}
-        signature = calculate_signature(values, client.password1, SignatureAlgorithm.MD5)
+        # Calculate correct signature using password1 with correct order: OutSum:InvId:password1
+        import hashlib
+        signature_string = f"{out_sum}:{inv_id}:{client.password1}"
+        signature = hashlib.md5(signature_string.encode("utf-8")).hexdigest().upper()
 
         result = client.verify_success_url(
             out_sum=out_sum,
@@ -265,11 +267,15 @@ class TestPaymentMixin:
         out_sum = "100.50"
         inv_id = "12345"
         shp_params = {"user_id": "123", "order_id": "456"}
-        # Calculate correct signature WITH shp_params
-        from aiorobokassa.utils.signature import calculate_signature
-
-        values = {"OutSum": out_sum, "InvId": inv_id, "Shp_order_id": "456", "Shp_user_id": "123"}
-        signature = calculate_signature(values, client.password1, SignatureAlgorithm.MD5)
+        # Calculate correct signature WITH shp_params in correct order: OutSum:InvId:Shp_order_id:Shp_user_id:password1
+        import hashlib
+        sorted_shp = sorted(shp_params.items())  # [('order_id', '456'), ('user_id', '123')]
+        signature_parts = [out_sum, inv_id]
+        for key, value in sorted_shp:
+            signature_parts.append(value)
+        signature_parts.append(client.password1)
+        signature_string = ":".join(signature_parts)
+        signature = hashlib.md5(signature_string.encode("utf-8")).hexdigest().upper()
 
         # Should not raise
         result = client.verify_success_url(

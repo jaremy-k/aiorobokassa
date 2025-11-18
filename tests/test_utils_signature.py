@@ -145,9 +145,10 @@ class TestVerifyResultURLSignature:
         out_sum = "100.50"
         inv_id = "12345"
         password = "password123"
-        # Calculate signature manually
-        values = {"OutSum": out_sum, "InvId": inv_id}
-        calculated = calculate_signature(values, password, SignatureAlgorithm.MD5)
+        # Calculate signature manually with correct order: OutSum:InvId:password2
+        import hashlib
+        signature_string = f"{out_sum}:{inv_id}:{password}"
+        calculated = hashlib.md5(signature_string.encode("utf-8")).hexdigest().upper()
         assert verify_result_url_signature(
             out_sum, inv_id, password, calculated, SignatureAlgorithm.MD5
         )
@@ -168,9 +169,16 @@ class TestVerifyResultURLSignature:
         inv_id = "12345"
         password = "password123"
         shp_params = {"user_id": "123", "order_id": "456"}
-        # Calculate signature with shp_params
-        values = {"OutSum": out_sum, "InvId": inv_id, "Shp_order_id": "456", "Shp_user_id": "123"}
-        calculated = calculate_signature(values, password, SignatureAlgorithm.MD5)
+        # Calculate signature with shp_params in correct order: OutSum:InvId:Shp_order_id:Shp_user_id:password2
+        # Shp_ parameters must be sorted alphabetically by key
+        import hashlib
+        sorted_shp = sorted(shp_params.items())  # [('order_id', '456'), ('user_id', '123')]
+        signature_parts = [out_sum, inv_id]
+        for key, value in sorted_shp:
+            signature_parts.append(value)
+        signature_parts.append(password)
+        signature_string = ":".join(signature_parts)
+        calculated = hashlib.md5(signature_string.encode("utf-8")).hexdigest().upper()
         assert verify_result_url_signature(
             out_sum, inv_id, password, calculated, SignatureAlgorithm.MD5, shp_params=shp_params
         )
@@ -184,9 +192,10 @@ class TestVerifySuccessURLSignature:
         out_sum = "100.50"
         inv_id = "12345"
         password = "password123"
-        # Calculate signature manually
-        values = {"OutSum": out_sum, "InvId": inv_id}
-        calculated = calculate_signature(values, password, SignatureAlgorithm.MD5)
+        # Calculate signature manually with correct order: OutSum:InvId:password1
+        import hashlib
+        signature_string = f"{out_sum}:{inv_id}:{password}"
+        calculated = hashlib.md5(signature_string.encode("utf-8")).hexdigest().upper()
         assert verify_success_url_signature(
             out_sum, inv_id, password, calculated, SignatureAlgorithm.MD5
         )
@@ -207,9 +216,15 @@ class TestVerifySuccessURLSignature:
         inv_id = "12345"
         password = "password123"
         shp_params = {"user_id": "123"}
-        # Calculate signature with shp_params
-        values = {"OutSum": out_sum, "InvId": inv_id, "Shp_user_id": "123"}
-        calculated = calculate_signature(values, password, SignatureAlgorithm.MD5)
+        # Calculate signature with shp_params in correct order: OutSum:InvId:Shp_user_id:password1
+        import hashlib
+        sorted_shp = sorted(shp_params.items())  # [('user_id', '123')]
+        signature_parts = [out_sum, inv_id]
+        for key, value in sorted_shp:
+            signature_parts.append(value)
+        signature_parts.append(password)
+        signature_string = ":".join(signature_parts)
+        calculated = hashlib.md5(signature_string.encode("utf-8")).hexdigest().upper()
         assert verify_success_url_signature(
             out_sum, inv_id, password, calculated, SignatureAlgorithm.MD5, shp_params=shp_params
         )
