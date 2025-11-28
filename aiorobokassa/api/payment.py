@@ -37,7 +37,7 @@ class PaymentMixin:
     """Mixin for payment operations."""
 
     def _build_payment_params(
-        self, request: PaymentRequest, signature_algorithm: Union[str, SignatureAlgorithm]
+            self, request: PaymentRequest, signature_algorithm: Union[str, SignatureAlgorithm]
     ) -> Dict[str, Optional[str]]:
         """Build payment URL parameters."""
         if TYPE_CHECKING:
@@ -87,6 +87,10 @@ class PaymentMixin:
             if receipt_str is not None:
                 params["Receipt"] = quote(receipt_str, safe="")
 
+        # User parameters (Shp_*) - must be added before SignatureValue
+        if request.user_parameters:
+            params.update({f"Shp_{k}": v for k, v in request.user_parameters.items()})
+
         # Calculate signature (receipt must be included if present)
         # Use original JSON string (not URL-encoded) for signature
         # Note: inv_id can be 0, so we check is not None, not truthiness
@@ -97,11 +101,8 @@ class PaymentMixin:
             password=client.password1,
             algorithm=signature_algorithm,
             receipt=receipt_str,  # Use original JSON string for signature
+            shp_params=request.user_parameters,
         )
-
-        # User parameters (Shp_*) - must be added before SignatureValue
-        if request.user_parameters:
-            params.update({f"Shp_{k}": v for k, v in request.user_parameters.items()})
 
         # SignatureValue must be LAST parameter
         params["SignatureValue"] = signature
@@ -109,18 +110,18 @@ class PaymentMixin:
         return params
 
     def create_payment_url(
-        self,
-        out_sum: Union[Decimal, float, int, str],
-        description: str,
-        inv_id: Optional[int] = None,
-        email: Optional[str] = None,
-        culture: Optional[str] = None,
-        encoding: Optional[str] = None,
-        is_test: Optional[int] = None,
-        expiration_date: Optional[str] = None,
-        user_parameters: Optional[Dict[str, str]] = None,
-        receipt: Optional[Union[Receipt, str, Dict[str, Any]]] = None,
-        signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
+            self,
+            out_sum: Union[Decimal, float, int, str],
+            description: str,
+            inv_id: Optional[int] = None,
+            email: Optional[str] = None,
+            culture: Optional[str] = None,
+            encoding: Optional[str] = None,
+            is_test: Optional[int] = None,
+            expiration_date: Optional[str] = None,
+            user_parameters: Optional[Dict[str, str]] = None,
+            receipt: Optional[Union[Receipt, str, Dict[str, Any]]] = None,
+            signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
     ) -> str:
         """
         Create payment URL for RoboKassa.
@@ -162,16 +163,16 @@ class PaymentMixin:
         return build_url(f"{client.base_url}{PAYMENT_ENDPOINT}", params)
 
     def _verify_notification(
-        self,
-        out_sum: str,
-        inv_id: str,
-        signature_value: str,
-        password: str,
-        notification_class: type,
-        verify_func,
-        error_message: str,
-        shp_params: Optional[Dict[str, str]] = None,
-        signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
+            self,
+            out_sum: str,
+            inv_id: str,
+            signature_value: str,
+            password: str,
+            notification_class: type,
+            verify_func,
+            error_message: str,
+            shp_params: Optional[Dict[str, str]] = None,
+            signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
     ) -> bool:
         """Generic notification verification."""
         try:
@@ -198,12 +199,12 @@ class PaymentMixin:
         return True
 
     def verify_result_url(
-        self,
-        out_sum: str,
-        inv_id: str,
-        signature_value: str,
-        shp_params: Optional[Dict[str, str]] = None,
-        signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
+            self,
+            out_sum: str,
+            inv_id: str,
+            signature_value: str,
+            shp_params: Optional[Dict[str, str]] = None,
+            signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
     ) -> bool:
         """Verify ResultURL notification signature."""
         if TYPE_CHECKING:
@@ -223,12 +224,12 @@ class PaymentMixin:
         )
 
     def verify_success_url(
-        self,
-        out_sum: str,
-        inv_id: str,
-        signature_value: str,
-        shp_params: Optional[Dict[str, str]] = None,
-        signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
+            self,
+            out_sum: str,
+            inv_id: str,
+            signature_value: str,
+            shp_params: Optional[Dict[str, str]] = None,
+            signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
     ) -> bool:
         """Verify SuccessURL redirect signature."""
         if TYPE_CHECKING:
@@ -268,18 +269,18 @@ class PaymentMixin:
         }
 
     def create_split_payment_url(
-        self,
-        out_amount: Union[Decimal, float, int, str],
-        merchant_id: str,
-        split_merchants: list[Dict[str, Any]],
-        merchant_comment: Optional[str] = None,
-        shop_params: Optional[list[Dict[str, str]]] = None,
-        email: Optional[str] = None,
-        inc_curr: Optional[str] = None,
-        language: Optional[str] = None,
-        is_test: Optional[bool] = None,
-        expiration_date: Optional[str] = None,
-        signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
+            self,
+            out_amount: Union[Decimal, float, int, str],
+            merchant_id: str,
+            split_merchants: list[Dict[str, Any]],
+            merchant_comment: Optional[str] = None,
+            shop_params: Optional[list[Dict[str, str]]] = None,
+            email: Optional[str] = None,
+            inc_curr: Optional[str] = None,
+            language: Optional[str] = None,
+            is_test: Optional[bool] = None,
+            expiration_date: Optional[str] = None,
+            signature_algorithm: Union[str, SignatureAlgorithm] = DEFAULT_SIGNATURE_ALGORITHM,
     ) -> str:
         """
         Create split payment URL for RoboKassa.

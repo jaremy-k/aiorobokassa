@@ -15,9 +15,9 @@ ALGORITHMS = {
 
 
 def calculate_signature(
-    values: Dict[str, str],
-    password: str,
-    algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
+        values: Dict[str, str],
+        password: str,
+        algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
 ) -> str:
     """
     Calculate signature for RoboKassa.
@@ -55,10 +55,10 @@ def calculate_signature(
 
 
 def verify_signature(
-    values: Dict[str, str],
-    password: str,
-    received_signature: str,
-    algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
+        values: Dict[str, str],
+        password: str,
+        received_signature: str,
+        algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
 ) -> bool:
     """
     Verify signature from RoboKassa.
@@ -77,12 +77,13 @@ def verify_signature(
 
 
 def calculate_payment_signature(
-    merchant_login: str,
-    out_sum: str,
-    inv_id: Optional[str],
-    password: str,
-    algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
-    receipt: Optional[str] = None,
+        merchant_login: str,
+        out_sum: str,
+        inv_id: Optional[str],
+        password: str,
+        algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
+        receipt: Optional[str] = None,
+        shp_params: Optional[Dict[str, str]] = None,
 ) -> str:
     """
     Calculate signature for payment URL.
@@ -96,9 +97,10 @@ def calculate_payment_signature(
         merchant_login: Merchant login
         out_sum: Payment amount
         inv_id: Invoice ID (optional)
-        password: Password (password1)
+        password: Password (password1)s
         algorithm: Hash algorithm
         receipt: Receipt JSON string for fiscalization (optional)
+        shp_params: User paramenters JSON string for additional custom information
 
     Returns:
         Signature string
@@ -121,6 +123,11 @@ def calculate_payment_signature(
     if receipt:
         signature_parts.append(receipt)
 
+    if shp_params:
+        sorted_shp = sorted(shp_params.items())
+        for key, value in sorted_shp:
+            signature_parts.append(value)
+
     signature_parts.append(password)
 
     signature_string = ":".join(signature_parts)
@@ -135,12 +142,12 @@ def calculate_payment_signature(
 
 
 def verify_result_url_signature(
-    out_sum: str,
-    inv_id: str,
-    password: str,
-    received_signature: str,
-    algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
-    shp_params: Optional[Dict[str, str]] = None,
+        out_sum: str,
+        inv_id: str,
+        password: str,
+        received_signature: str,
+        algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
+        shp_params: Optional[Dict[str, str]] = None,
 ) -> bool:
     """
     Verify signature from ResultURL notification.
@@ -170,7 +177,7 @@ def verify_result_url_signature(
     # Build signature string in FIXED order: OutSum:InvId:Shp_param1:Shp_param2:...:password2
     # Shp_ parameters must be sorted alphabetically by key (with Shp_ prefix)
     signature_parts = [out_sum, inv_id]
-    
+
     # Add Shp_ parameters if provided (sorted alphabetically by key with Shp_ prefix)
     if shp_params:
         sorted_shp = sorted(shp_params.items())
@@ -179,7 +186,7 @@ def verify_result_url_signature(
             # Format: Shp_key:value, but actually RoboKassa uses just values in order
             # Let me check the actual format...
             signature_parts.append(value)
-    
+
     signature_parts.append(password)
     signature_string = ":".join(signature_parts)
 
@@ -190,17 +197,17 @@ def verify_result_url_signature(
 
     hash_obj = hash_func(signature_string.encode("utf-8"))
     calculated_signature = hash_obj.hexdigest().upper()
-    
+
     return calculated_signature == received_signature.upper()
 
 
 def verify_success_url_signature(
-    out_sum: str,
-    inv_id: str,
-    password: str,
-    received_signature: str,
-    algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
-    shp_params: Optional[Dict[str, str]] = None,
+        out_sum: str,
+        inv_id: str,
+        password: str,
+        received_signature: str,
+        algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
+        shp_params: Optional[Dict[str, str]] = None,
 ) -> bool:
     """
     Verify signature from SuccessURL redirect.
@@ -230,13 +237,13 @@ def verify_success_url_signature(
     # Build signature string in FIXED order: OutSum:InvId:Shp_params:password1
     # Shp_ parameters must be sorted alphabetically by key
     signature_parts = [out_sum, inv_id]
-    
+
     # Add Shp_ parameters if provided (sorted alphabetically by key)
     if shp_params:
         sorted_shp = sorted(shp_params.items())
         for key, value in sorted_shp:
             signature_parts.append(value)
-    
+
     signature_parts.append(password)
     signature_string = ":".join(signature_parts)
 
@@ -247,14 +254,14 @@ def verify_success_url_signature(
 
     hash_obj = hash_func(signature_string.encode("utf-8"))
     calculated_signature = hash_obj.hexdigest().upper()
-    
+
     return calculated_signature == received_signature.upper()
 
 
 def calculate_split_signature(
-    invoice_json: str,
-    password: str,
-    algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
+        invoice_json: str,
+        password: str,
+        algorithm: Union[str, SignatureAlgorithm] = SignatureAlgorithm.MD5,
 ) -> str:
     """
     Calculate signature for split payment.
